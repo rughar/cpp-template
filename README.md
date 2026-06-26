@@ -1,37 +1,29 @@
 # C++ Project Template
 
-> A lightweight C++ project template focused on simplicity,
-> maintainability, scientific software development and clean project
-> organization.
+A lightweight template for modern C++ projects based on CMake.
 
-> **Status:** Work in progress
+The template provides:
 
-## Features
+-   a predefined project structure,
+-   a modern CMake build system,
+-   a lightweight unit testing framework,
+-   GitHub Actions CI,
+-   optional developer tools for project maintenance.
 
--   Modern CMake
--   Cross-platform (Windows, Linux, macOS)
--   GitHub Actions CI
--   VS Code support
--   Lightweight custom unit test framework
--   Automatic project component generation
--   Minimal external dependencies
+The goal is to provide a clean starting point while keeping the required
+tooling minimal.
 
 ------------------------------------------------------------------------
 
-# Philosophy
+## Contents
 
-This template intentionally focuses on **simplicity over features**.
-
-The goal is to provide a template for project that is understandable by a
-new developer.
-
-The template is suitable for:
-
--   scientific software
--   numerical methods
--   simulation software
--   reusable libraries
--   command-line applications
+-   [Project Structure](#project-structure)
+-   [Quick Start](#quick-start)
+-   [Project Generator](#project-generator)
+-   [Unit Testing](#unit-testing)
+-   [Continuous Integration](#continuous-integration)
+-   [Conventions](#conventions)
+-   [FAQ](#faq)
 
 ------------------------------------------------------------------------
 
@@ -46,56 +38,45 @@ The template is suitable for:
 ├── cmake/
 ├── .github/
 ├── CMakeLists.txt
+├── .editorconfig
 └── README.md
 ```
 
-## libs/
+  Directory    Purpose
+  ------------ ------------------------------
+  `apps/`      Executable applications
+  `libs/`      Reusable libraries
+  `tests/`     Unit tests (mirrors `libs/`)
+  `tools/`     Optional developer tools
+  `cmake/`     Shared CMake modules
+  `.github/`   GitHub Actions workflows
 
-Reusable libraries.
-
-Every library has **exactly one corresponding unit test** project.
-
-## apps/
-
-Executable applications.
-
-Applications typically combine multiple libraries.
-
-## tests/
-
-Unit tests.
-
-The directory layout mirrors `libs/`.
-
-## tools/
-
-Contains project maintenance utilities.
-
-Currently the template provides:
+Each library has one corresponding test project:
 
 ``` text
-project.cmake
+libs/statistics
+        │
+        ▼
+tests/statistics
 ```
-
-which creates and removes project components automatically.
 
 ------------------------------------------------------------------------
 
-# Building
+# Quick Start
 
-Configure:
+Configure
 
 ``` bash
 cmake -S . -B build
 ```
 
-Build:
+Build
 
 ``` bash
 cmake --build build
 ```
 
-Run tests:
+Run tests
 
 ``` bash
 ctest --test-dir build --output-on-failure
@@ -103,87 +84,104 @@ ctest --test-dir build --output-on-failure
 
 ------------------------------------------------------------------------
 
-# Creating Components
+# Project Generator
 
-## Library
+The template includes an optional developer tool:
+
+``` text
+tools/project.cmake
+```
+
+The generator automates repetitive maintenance tasks but is **not**
+required to configure, build or test the project.
+
+## Command Syntax
+
+``` text
+cmake -P tools/project.cmake <action> <type> <name> [dependencies...]
+```
+
+## Supported Commands
+
+### `create lib`
+
+Creates a new library together with its corresponding unit test project.
+
+### `create app`
+
+Creates a new application.
+
+### `remove lib`
+
+Removes a library together with its corresponding unit test project.
+
+### `remove app`
+
+Removes an application.
+
+## Create a Library
 
 ``` bash
 cmake -P tools/project.cmake create lib statistics
 ```
 
-Creates
+Creates:
 
 ``` text
 libs/statistics/
 tests/statistics/
 ```
 
-The following are generated automatically:
+Generates:
 
--   source files
--   headers
--   CMakeLists.txt
--   unit test project
+-   source file
+-   header
+-   `CMakeLists.txt`
+-   unit test
 
-No manual CMake modifications are necessary.
+Registers both projects automatically.
 
-------------------------------------------------------------------------
-
-## Library with Dependencies
+## Library Dependencies
 
 ``` bash
 cmake -P tools/project.cmake create lib solver matrix algebra
 ```
 
-The generated library links
+The generated library links against:
 
--   matrix
--   algebra
+-   `matrix`
+-   `algebra`
 
-The generated unit tests automatically link
+The generated test project links against:
 
--   unit_test
--   solver
--   matrix
--   algebra
+-   `unit_test`
+-   `solver`
+-   `matrix`
+-   `algebra`
 
-The generator validates that every dependency already exists.
+All dependency libraries must already exist.
 
-------------------------------------------------------------------------
-
-## Application
+## Create an Application
 
 ``` bash
-cmake -P tools/project.cmake create app simulator solver
+cmake -P tools/project.cmake create app demo solver
 ```
 
-Applications are **not** automatically accompanied by tests.
-
-------------------------------------------------------------------------
-
-## Remove
-
-``` bash
-cmake -P tools/project.cmake remove lib statistics
-cmake -P tools/project.cmake remove app simulator
-```
-
-Removing a library also removes its associated test project.
+Applications do not receive automatically generated test projects.
 
 ------------------------------------------------------------------------
 
 # Unit Testing
 
-The template intentionally ships with a very small custom testing
-framework.
+Each library owns one unit test project.
 
-Typical usage:
+Typical structure:
 
 ``` cpp
 unit_test::Runner runner;
 
-runner.run(testMean, "testMean");
-runner.run(testVariance, "testVariance");
+runner.run(testFoo, "testFoo");
+runner.run(testBar, "testBar");
 
 runner.printSummary();
 
@@ -193,72 +191,65 @@ return runner.getExitCode();
 Assertions:
 
 ``` cpp
-unit_test::require(value == expected);
-
-unit_test::require(
-    value == expected,
-    "Unexpected value.");
+unit_test::require(condition);
+unit_test::require(condition, "Message");
 ```
-
-Successful tests stay quiet.
-
-Failed tests produce readable diagnostics.
 
 ------------------------------------------------------------------------
 
 # Continuous Integration
 
-GitHub Actions automatically builds and tests
+GitHub Actions automatically:
 
--   Windows
--   Linux
--   macOS
-
-Release configuration is used for CI.
+-   configure the project,
+-   build the project,
+-   execute all tests.
 
 ------------------------------------------------------------------------
 
-# VS Code
+# Conventions
 
-Recommended extensions:
-
--   C/C++
--   CMake Tools
--   CMake
-
-------------------------------------------------------------------------
-
-# Why no clang-format?
-
-Formatting preferences differ between teams.
-
-This template intentionally avoids enforcing a formatting style.
-
-Only `.editorconfig` is included to enforce universally useful
-conventions.
+-   Reusable code belongs in `libs/`.
+-   Applications belong in `apps/`.
+-   Every library owns one test project.
+-   The `tests/` directory mirrors `libs/`.
+-   `tools/` contains optional developer utilities, not build
+    infrastructure.
 
 ------------------------------------------------------------------------
 
-# Roadmap
+# FAQ
 
-Planned improvements:
+### Why is every library paired with a test project?
 
--   rename component
--   doctor command
--   dependency graph
--   coverage
--   benchmarks
--   documentation generation
+To keep the project structure predictable and make missing tests
+immediately visible.
 
-------------------------------------------------------------------------
+### Is `tools/project.cmake` required?
 
-# Contributing
+No. It is a convenience utility. Everything it generates can also be
+created manually.
 
-Prefer:
+### Can I use GoogleTest?
 
--   readability
--   simplicity
--   minimal dependencies
--   cross-platform compatibility
+Yes. The included framework is intentionally lightweight and can be
+replaced.
 
-over additional complexity.
+### Can I use Conan or vcpkg?
+
+Yes. The template does not depend on any package manager.
+
+### Is a `.clang-format` file included?
+
+No. Formatting is left to the project. The template only provides a
+minimal `.editorconfig`.
+
+
+| Directory | Purpose |
+| --------- | ------- |
+| `apps/` | Executable applications |
+| `libs/` | Reusable libraries |
+| `tests/` | Unit tests (mirrors `libs/`) |
+| `tools/` | Optional developer tools |
+| `cmake/` | Shared CMake modules |
+| `.github/` | GitHub Actions workflows |
