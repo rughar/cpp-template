@@ -5,31 +5,41 @@
 namespace
 {
 
+void require(bool condition)
+{
+  if (!condition)
+  {
+    throw std::runtime_error("Test requirement failed.");
+  }
+}
+
 void testRequireAcceptsTrueCondition()
 {
-  unit_test::require(true);
+  require(true);
 }
 
 void testRequireThrowsForFalseCondition()
 {
   try
   {
-    unit_test::require(false);
+    require(false);
   }
   catch (const std::runtime_error&)
   {
     return;
   }
 
-  throw std::runtime_error("unit_test::require(false) did not throw.");
+  throw std::runtime_error("require(false) did not throw.");
 }
 
 }
 
 int main()
 {
-  testRequireAcceptsTrueCondition();
-  testRequireThrowsForFalseCondition();
-
-  return 0;
+  unit_test::Runner runner;
+  
+  runner.run(testRequireAcceptsTrueCondition,"testRequireAcceptsTrueCondition");
+  runner.run(testRequireThrowsForFalseCondition,"testRequireThrowsForFalseCondition");
+  runner.printSummary();
+  return runner.getExitCode();
 }
