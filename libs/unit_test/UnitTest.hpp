@@ -46,7 +46,7 @@ public:
 
     std::cout << "Test summary: " << this->passedTests << " passed, "
               << this->failedTests << " failed, out of "
-              << this->totalTests << " tests.\n";
+              << this->totalTests << " tests.";
   }
 
   int getExitCode() const

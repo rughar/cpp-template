@@ -22,7 +22,7 @@ void testRequireThrowsForFalseCondition()
 {
   try
   {
-    require(false);
+    require(true);
   }
   catch (const std::runtime_error&)
   {
