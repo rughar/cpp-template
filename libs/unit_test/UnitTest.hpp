@@ -8,13 +8,6 @@ namespace unit_test
 
 using TestFunction = void (*)();
 
-namespace color
-{
-inline constexpr const char* reset = "\033[0m";
-inline constexpr const char* red = "\033[31m";
-inline constexpr const char* yellow = "\033[33m";
-}
-
 class Runner
 {
 public:
@@ -32,14 +25,14 @@ public:
     {
       this->failedTests++;
 
-      std::cout << color::red << "FAILED" << color::reset << ": " << testName << '\n';
+      std::cout << "FAILED: " << testName << '\n';
       printIndented(error.what());
     }
     catch (...)
     {
       this->failedTests++;
 
-      std::cout << color::red << "FAILED" << color::reset << ": " << testName << '\n';
+      std::cout << "FAILED: " << testName << '\n';
       printIndented("Unknown error");
     }
   }
@@ -51,8 +44,7 @@ public:
       return;
     }
 
-    std::cout << color::yellow << "Test summary" << color::reset << ": "
-              << this->passedTests << " passed, "
+    std::cout << "Test summary: " << this->passedTests << " passed, "
               << this->failedTests << " failed, out of "
               << this->totalTests << " tests.\n";
   }
@@ -67,7 +59,7 @@ private:
   void printIndented(const char* text) const
   {
     std::cout << "    ";
-    
+
     while (*text != '\0')
     {
       std::cout << *text;

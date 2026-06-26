@@ -23,3 +23,8 @@ add_test(
   NAME ${TEST_NAME}_tests
   COMMAND ${TEST_NAME}_tests
 )
+
+set_tests_properties(${TEST_NAME}_tests
+  PROPERTIES
+    DEPENDS unit_test_tests
+)
