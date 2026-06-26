@@ -33,14 +33,14 @@ public:
       this->failedTests++;
 
       std::cout << color::red << "FAILED" << color::reset << ": " << testName << '\n';
-      std::cout << error.what() << '\n';
+      printIndented(error.what());
     }
     catch (...)
     {
       this->failedTests++;
 
       std::cout << color::red << "FAILED" << color::reset << ": " << testName << '\n';
-      std::cout << "Unknown error\n";
+      printIndented("Unknown error");
     }
   }
 
@@ -63,6 +63,23 @@ public:
   }
 
 private:
+
+  void printIndented(const char* text) const
+  {
+    std::cout << "    ";
+    
+    while (*text != '\0')
+    {
+      std::cout << *text;
+      if (*text == '\n' && *(text + 1) != '\0')
+      {
+        std::cout << "    ";
+      }
+      text++;
+    }
+
+    std::cout << '\n';
+  }
 
   int totalTests = 0;
   int passedTests = 0;
