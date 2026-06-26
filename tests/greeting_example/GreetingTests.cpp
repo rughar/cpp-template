@@ -25,7 +25,6 @@ void testCreateGreeting()
 int main()
 {
   unit_test::Runner runner;
-  runner.writeCategory("greeting_example");
 
   runner.run(testCreateGreeting, "testCreateGreeting");
 

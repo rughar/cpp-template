@@ -11,8 +11,6 @@ using TestFunction = void (*)();
 namespace color
 {
 inline constexpr const char* reset = "\033[0m";
-inline constexpr const char* blue = "\033[34m";
-inline constexpr const char* green = "\033[32m";
 inline constexpr const char* red = "\033[31m";
 inline constexpr const char* yellow = "\033[33m";
 }
@@ -20,11 +18,6 @@ inline constexpr const char* yellow = "\033[33m";
 class Runner
 {
 public:
-
-  void writeCategory(const char* categoryName) const
-  {
-    std::cout << color::blue << categoryName << color::reset << '\n';
-  }
 
   void run(TestFunction testFunction, const char* testName)
   {
@@ -53,8 +46,15 @@ public:
 
   void printSummary() const
   {
-    std::cout << color::yellow << "Test summary" << color::reset << ": " << this->passedTests << " passed, "
-      << this->failedTests << " failed, out of " << this->totalTests << " tests.\n";
+    if (this->failedTests == 0)
+    {
+      return;
+    }
+
+    std::cout << color::yellow << "Test summary" << color::reset << ": "
+              << this->passedTests << " passed, "
+              << this->failedTests << " failed, out of "
+              << this->totalTests << " tests.\n";
   }
 
   int getExitCode() const
