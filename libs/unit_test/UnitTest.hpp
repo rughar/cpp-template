@@ -20,6 +20,7 @@ public:
     {
       testFunction();
       this->passedTests++;
+      std::cout << "PASSED: " << testName << '\n';
     }
     catch (const std::exception& error)
     {

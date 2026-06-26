@@ -17,7 +17,7 @@ void require(bool condition)
 
 void testCreateGreeting()
 {
-  require(greeting_example::createGreeting("World") == "Hell, World!");
+  require(greeting_example::createGreeting("World") == "Hello, World!");
 }
 
 }
