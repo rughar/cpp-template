@@ -22,7 +22,7 @@ public:
     catch (const std::exception& error)
     {
       this->failedTests++;
-      std::cerr << "[FAIL] " << testName << ": " << error.what() << '\n'
+      std::cerr << "[FAIL] " << testName << ": " << error.what() << '\n';
     }
     catch (...)
     {
