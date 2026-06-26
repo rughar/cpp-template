@@ -16,7 +16,6 @@ target_link_libraries(${TEST_NAME}_tests
     unit_test
     greeting_example
 )
-
 project_set_warnings(${TEST_NAME}_tests)
 
 add_test(

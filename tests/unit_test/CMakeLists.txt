@@ -15,7 +15,6 @@ target_link_libraries(${TEST_NAME}_tests
   PRIVATE
     unit_test
 )
-
 project_set_warnings(${TEST_NAME}_tests)
 
 add_test(
