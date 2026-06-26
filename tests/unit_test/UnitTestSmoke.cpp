@@ -5,24 +5,16 @@
 namespace
 {
 
-void require(bool condition)
-{
-  if (!condition)
-  {
-    throw std::runtime_error("Test requirement failed.");
-  }
-}
-
 void testRequireAcceptsTrueCondition()
 {
-  require(true);
+  unit_test::require(true, "require(true) should not throw.");
 }
 
 void testRequireThrowsForFalseCondition()
 {
   try
   {
-    require(false);
+    unit_test::require(false);
   }
   catch (const std::runtime_error&)
   {

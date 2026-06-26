@@ -2,9 +2,18 @@
 
 #include <exception>
 #include <iostream>
+#include <stdexcept>
 
 namespace unit_test
 {
+
+inline void require(bool condition, const char* message = "Test requirement failed.")
+{
+  if (!condition)
+  {
+    throw std::runtime_error(message);
+  }
+}
 
 using TestFunction = void (*)();
 

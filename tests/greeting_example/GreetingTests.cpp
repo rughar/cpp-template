@@ -7,17 +7,9 @@
 namespace
 {
 
-void require(bool condition)
-{
-  if (!condition)
-  {
-    throw std::runtime_error("Test requirement failed.");
-  }
-}
-
 void testCreateGreeting()
 {
-  require(greeting_example::createGreeting("World") == "Hello, World!");
+  unit_test::require(greeting_example::createGreeting("World") == "Hello, World!", "Greeting has unexpected format.");
 }
 
 }
