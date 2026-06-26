@@ -17,10 +17,7 @@ void require(bool condition)
 
 void testCreateGreeting()
 {
-  const std::string greeting =
-    greeting_example::createGreeting("World");
-
-  require(greeting == "Hello, World!");
+  require(greeting_example::createGreeting("World") == "Hell, World!");
 }
 
 }
@@ -28,9 +25,10 @@ void testCreateGreeting()
 int main()
 {
   unit_test::Runner runner;
+  runner.writeCategory("greeting_example");
 
-  runner.run(testCreateGreeting,"testCreateGreeting");
-  
+  runner.run(testCreateGreeting, "testCreateGreeting");
+
   runner.printSummary();
   return runner.getExitCode();
 }

@@ -10,11 +10,11 @@ using TestFunction = void (*)();
 
 namespace color
 {
-  inline constexpr const char* reset = "\033[0m";
-  inline constexpr const char* blue = "\033[34m";
-  inline constexpr const char* green = "\033[32m";
-  inline constexpr const char* red = "\033[31m";
-  inline constexpr const char* yellow = "\033[33m";
+inline constexpr const char* reset = "\033[0m";
+inline constexpr const char* blue = "\033[34m";
+inline constexpr const char* green = "\033[32m";
+inline constexpr const char* red = "\033[31m";
+inline constexpr const char* yellow = "\033[33m";
 }
 
 class Runner
@@ -33,40 +33,33 @@ public:
     try
     {
       testFunction();
-
       this->passedTests++;
-
-      std::cout << color::green << "PASSED" << color::reset << ": " << testName << '\n';
     }
     catch (const std::exception& error)
     {
       this->failedTests++;
 
-      std::cout << color::red << "FAILED" << color::reset << ": " << testName << '\n' << error.what() << '\n';
+      std::cout << color::red << "FAILED" << color::reset << ": " << testName << '\n';
+      std::cout << error.what() << '\n';
     }
     catch (...)
     {
       this->failedTests++;
 
-      std::cout << color::red << "FAILED" << color::reset << ": " << testName << '\n' << "Unknown error" << '\n';
+      std::cout << color::red << "FAILED" << color::reset << ": " << testName << '\n';
+      std::cout << "Unknown error\n";
     }
   }
 
   void printSummary() const
   {
-    std::cout 
-      << color::yellow << "Test summary" << color::reset << ": " << this->passedTests << " passed, "
-      << this->failedTests << " failed, out of " << this->totalTests << " tests." << '\n';
+    std::cout << color::yellow << "Test summary" << color::reset << ": " << this->passedTests << " passed, "
+      << this->failedTests << " failed, out of " << this->totalTests << " tests.\n";
   }
 
   int getExitCode() const
   {
-    if (this->failedTests > 0)
-    {
-      return 1;
-    }
-
-    return 0;
+    return this->failedTests == 0 ? 0 : 1;
   }
 
 private:
