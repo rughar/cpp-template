@@ -37,10 +37,11 @@ void testRequireThrowsForFalseCondition()
 int main()
 {
   unit_test::Runner runner;
+  runner.writeCategory("unit_test");
 
   runner.run(testRequireAcceptsTrueCondition,"testRequireAcceptsTrueCondition");
   runner.run(testRequireThrowsForFalseCondition,"testRequireThrowsForFalseCondition");
-  
+
   runner.printSummary();
   return runner.getExitCode();
 }
