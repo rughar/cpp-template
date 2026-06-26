@@ -22,10 +22,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Configure
-        run: cmake -S . -B build -DPROJECT_BUILD_TESTS=ON -DPROJECT_BUILD_APPS=ON
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DPROJECT_BUILD_TESTS=ON -DPROJECT_BUILD_APPS=ON
 
       - name: Build
-        run: cmake --build build
+        run: cmake --build build --config Release
 
       - name: Test
-        run: ctest --test-dir build --build-config Debug --output-on-failure
+        run: ctest --test-dir build --build-config Release --output-on-failure
