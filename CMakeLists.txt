@@ -7,8 +7,16 @@ project(
   LANGUAGES CXX
 )
 
-add_subdirectory(libs)
-add_subdirectory(apps)
+include(cmake/ProjectOptions.cmake)
+include(cmake/CompilerWarnings.cmake)
 
-enable_testing()
-add_subdirectory(tests)
+add_subdirectory(libs)
+
+if(PROJECT_BUILD_APPS)
+  add_subdirectory(apps)
+endif()
+
+if(PROJECT_BUILD_TESTS)
+  enable_testing()
+  add_subdirectory(tests)
+endif()
