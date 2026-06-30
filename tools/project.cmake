@@ -1,6 +1,6 @@
 function(get_action output_variable)
   if(CMAKE_ARGC LESS 4)
-    message(FATAL_ERROR "Missing action. Use: cmake -P tools/project.cmake create lib my_library")
+    message(FATAL_ERROR "Missing action.")
   endif()
 
   set(${output_variable} "${CMAKE_ARGV3}" PARENT_SCOPE)
@@ -8,7 +8,7 @@ endfunction()
 
 function(get_component_type output_variable)
   if(CMAKE_ARGC LESS 5)
-    message(FATAL_ERROR "Missing component type. Use: cmake -P tools/project.cmake create lib my_library")
+    message(FATAL_ERROR "Missing component type.")
   endif()
 
   set(${output_variable} "${CMAKE_ARGV4}" PARENT_SCOPE)
@@ -16,7 +16,7 @@ endfunction()
 
 function(get_component_name output_variable)
   if(CMAKE_ARGC LESS 6)
-    message(FATAL_ERROR "Missing component name. Use: cmake -P tools/project.cmake create lib my_library")
+    message(FATAL_ERROR "Missing component name.")
   endif()
 
   set(${output_variable} "${CMAKE_ARGV5}" PARENT_SCOPE)
@@ -36,9 +36,15 @@ function(get_dependencies output_variable)
   set(${output_variable} "${dependencies}" PARENT_SCOPE)
 endfunction()
 
+function(require_dependencies dependencies)
+  if("${dependencies}" STREQUAL "")
+    message(FATAL_ERROR "Missing dependency name.")
+  endif()
+endfunction()
+
 function(require_no_dependencies dependencies)
   if(NOT "${dependencies}" STREQUAL "")
-    message(FATAL_ERROR "The 'remove' action does not accept dependencies.")
+    message(FATAL_ERROR "This action does not accept dependencies.")
   endif()
 endfunction()
 
@@ -76,6 +82,12 @@ function(require_libs_exist lib_names)
   foreach(lib_name ${lib_names})
     require_lib_exists("${lib_name}")
   endforeach()
+endfunction()
+
+function(require_app_exists app_name)
+  if(NOT EXISTS "apps/${app_name}")
+    message(FATAL_ERROR "Application does not exist: ${app_name}")
+  endif()
 endfunction()
 
 function(append_subdirectory file_path directory_name)
@@ -147,19 +159,214 @@ ${dependency_lines})
   set(${output_variable} "${block}" PARENT_SCOPE)
 endfunction()
 
-function(format_test_dependencies output_variable lib_name dependencies)
-  set(all_dependencies "${lib_name};${dependencies}")
-  format_dependency_lines(dependency_lines "${all_dependencies}")
-
+function(format_test_dependencies output_variable lib_name)
   set(block
 "target_link_libraries(\${TEST_NAME}_tests
   PRIVATE
     unit_test
+    ${lib_name}
+)
+"
+  )
+
+  set(${output_variable} "${block}" PARENT_SCOPE)
+endfunction()
+
+function(format_target_dependencies output_variable target_name visibility dependencies)
+  format_dependency_lines(dependency_lines "${dependencies}")
+
+  if(dependency_lines STREQUAL "")
+    set(${output_variable} "" PARENT_SCOPE)
+    return()
+  endif()
+
+  set(block
+"target_link_libraries(${target_name}
+  ${visibility}
 ${dependency_lines})
 "
   )
 
   set(${output_variable} "${block}" PARENT_SCOPE)
+endfunction()
+
+function(extract_existing_dependencies output_variable dependency_text)
+  string(REGEX MATCHALL "[A-Za-z_][A-Za-z0-9_]*" dependencies "${dependency_text}")
+  set(${output_variable} "${dependencies}" PARENT_SCOPE)
+endfunction()
+
+function(read_target_dependencies output_variable file_path target_name visibility)
+  file(READ "${file_path}" file_content)
+
+  set(block_header
+"target_link_libraries(${target_name}
+  ${visibility}
+"
+  )
+
+  string(FIND "${file_content}" "${block_header}" block_start)
+
+  if(block_start EQUAL -1)
+    set(${output_variable} "" PARENT_SCOPE)
+    return()
+  endif()
+
+  string(LENGTH "${block_header}" block_header_length)
+  math(EXPR dependencies_start "${block_start} + ${block_header_length}")
+
+  string(SUBSTRING "${file_content}" "${dependencies_start}" -1 content_after_dependencies_start)
+  string(FIND "${content_after_dependencies_start}" ")" relative_block_end)
+
+  if(relative_block_end EQUAL -1)
+    message(FATAL_ERROR "Could not parse target_link_libraries block in ${file_path}")
+  endif()
+
+  string(SUBSTRING "${content_after_dependencies_start}" 0 "${relative_block_end}" dependency_text)
+  extract_existing_dependencies(existing_dependencies "${dependency_text}")
+
+  set(${output_variable} "${existing_dependencies}" PARENT_SCOPE)
+endfunction()
+
+function(write_target_dependencies file_path target_name visibility dependencies)
+  file(READ "${file_path}" file_content)
+
+  set(block_header
+"target_link_libraries(${target_name}
+  ${visibility}
+"
+  )
+
+  string(FIND "${file_content}" "${block_header}" block_start)
+  format_target_dependencies(new_block "${target_name}" "${visibility}" "${dependencies}")
+
+  if(block_start EQUAL -1)
+    if(new_block STREQUAL "")
+      return()
+    endif()
+
+    string(FIND "${file_content}" "project_set_warnings(" warnings_position)
+
+    if(warnings_position EQUAL -1)
+      if(NOT file_content STREQUAL "" AND NOT file_content MATCHES "\n$")
+        string(APPEND file_content "\n")
+      endif()
+
+      string(APPEND file_content "${new_block}")
+    else()
+      string(SUBSTRING "${file_content}" 0 "${warnings_position}" content_before_warnings)
+      string(SUBSTRING "${file_content}" "${warnings_position}" -1 content_after_warnings)
+
+      set(file_content "${content_before_warnings}${new_block}${content_after_warnings}")
+    endif()
+
+    file(WRITE "${file_path}" "${file_content}")
+    return()
+  endif()
+
+  string(LENGTH "${block_header}" block_header_length)
+  math(EXPR dependencies_start "${block_start} + ${block_header_length}")
+
+  string(SUBSTRING "${file_content}" "${dependencies_start}" -1 content_after_dependencies_start)
+  string(FIND "${content_after_dependencies_start}" ")" relative_block_end)
+
+  if(relative_block_end EQUAL -1)
+    message(FATAL_ERROR "Could not parse target_link_libraries block in ${file_path}")
+  endif()
+
+  math(EXPR block_end "${dependencies_start} + ${relative_block_end} + 2")
+
+  string(SUBSTRING "${file_content}" 0 "${block_start}" content_before_block)
+  string(SUBSTRING "${file_content}" "${block_end}" -1 content_after_block)
+
+  file(WRITE "${file_path}" "${content_before_block}${new_block}${content_after_block}")
+endfunction()
+
+function(create_dependencies_in_target file_path target_name visibility dependencies)
+  read_target_dependencies(existing_dependencies "${file_path}" "${target_name}" "${visibility}")
+
+  foreach(dependency ${dependencies})
+    list(FIND existing_dependencies "${dependency}" dependency_index)
+
+    if(NOT dependency_index EQUAL -1)
+      message(FATAL_ERROR "Dependency already exists: ${dependency}")
+    endif()
+  endforeach()
+
+  set(all_dependencies "${existing_dependencies}")
+
+  foreach(dependency ${dependencies})
+    list(APPEND all_dependencies "${dependency}")
+  endforeach()
+
+  write_target_dependencies("${file_path}" "${target_name}" "${visibility}" "${all_dependencies}")
+endfunction()
+
+function(remove_dependencies_from_target file_path target_name visibility dependencies)
+  read_target_dependencies(existing_dependencies "${file_path}" "${target_name}" "${visibility}")
+
+  foreach(dependency ${dependencies})
+    list(FIND existing_dependencies "${dependency}" dependency_index)
+
+    if(dependency_index EQUAL -1)
+      message(FATAL_ERROR "Dependency does not exist: ${dependency}")
+    endif()
+  endforeach()
+
+  set(remaining_dependencies "${existing_dependencies}")
+
+  foreach(dependency ${dependencies})
+    list(REMOVE_ITEM remaining_dependencies "${dependency}")
+  endforeach()
+
+  write_target_dependencies("${file_path}" "${target_name}" "${visibility}" "${remaining_dependencies}")
+endfunction()
+
+function(create_app_dependency app_name dependencies)
+  require_app_exists("${app_name}")
+  require_libs_exist("${dependencies}")
+
+  create_dependencies_in_target(
+    "apps/${app_name}/CMakeLists.txt"
+    "\${APP_NAME}"
+    "PRIVATE"
+    "${dependencies}"
+  )
+endfunction()
+
+function(create_lib_dependency lib_name dependencies)
+  require_lib_exists("${lib_name}")
+  require_libs_exist("${dependencies}")
+
+  create_dependencies_in_target(
+    "libs/${lib_name}/CMakeLists.txt"
+    "\${LIBRARY_NAME}"
+    "PUBLIC"
+    "${dependencies}"
+  )
+endfunction()
+
+function(remove_app_dependency app_name dependencies)
+  require_app_exists("${app_name}")
+  require_libs_exist("${dependencies}")
+
+  remove_dependencies_from_target(
+    "apps/${app_name}/CMakeLists.txt"
+    "\${APP_NAME}"
+    "PRIVATE"
+    "${dependencies}"
+  )
+endfunction()
+
+function(remove_lib_dependency lib_name dependencies)
+  require_lib_exists("${lib_name}")
+  require_libs_exist("${dependencies}")
+
+  remove_dependencies_from_target(
+    "libs/${lib_name}/CMakeLists.txt"
+    "\${LIBRARY_NAME}"
+    "PUBLIC"
+    "${dependencies}"
+  )
 endfunction()
 
 function(create_lib lib_name dependencies)
@@ -173,7 +380,7 @@ function(create_lib lib_name dependencies)
   file(MAKE_DIRECTORY "${test_dir}")
 
   format_library_dependencies(library_dependencies "${dependencies}")
-  format_test_dependencies(test_dependencies "${lib_name}" "${dependencies}")
+  format_test_dependencies(test_dependencies "${lib_name}")
 
   file(WRITE "${lib_dir}/CMakeLists.txt"
 "file(GLOB LIBRARY_SOURCES CONFIGURE_DEPENDS
@@ -340,27 +547,63 @@ validate_name("${COMPONENT_NAME}")
 validate_names("${DEPENDENCIES}")
 
 if(ACTION STREQUAL "create")
-  require_libs_exist("${DEPENDENCIES}")
   if(COMPONENT_TYPE STREQUAL "lib")
+    require_libs_exist("${DEPENDENCIES}")
+
     create_lib("${COMPONENT_NAME}" "${DEPENDENCIES}")
     message(STATUS "Created lib with tests: ${COMPONENT_NAME}")
+
   elseif(COMPONENT_TYPE STREQUAL "app")
+    require_libs_exist("${DEPENDENCIES}")
+
     create_app("${COMPONENT_NAME}" "${DEPENDENCIES}")
     message(STATUS "Created app: ${COMPONENT_NAME}")
+
+  elseif(COMPONENT_TYPE STREQUAL "lib_dependency")
+    require_dependencies("${DEPENDENCIES}")
+
+    create_lib_dependency("${COMPONENT_NAME}" "${DEPENDENCIES}")
+    message(STATUS "Created lib dependencies for ${COMPONENT_NAME}: ${DEPENDENCIES}")
+
+  elseif(COMPONENT_TYPE STREQUAL "app_dependency")
+    require_dependencies("${DEPENDENCIES}")
+
+    create_app_dependency("${COMPONENT_NAME}" "${DEPENDENCIES}")
+    message(STATUS "Created app dependencies for ${COMPONENT_NAME}: ${DEPENDENCIES}")
+
   else()
-    message(FATAL_ERROR "Unknown component type: ${COMPONENT_TYPE}. Supported types: lib, app")
+    message(FATAL_ERROR "Unknown component type: ${COMPONENT_TYPE}. Supported types: lib, app, lib_dependency, app_dependency")
   endif()
+
 elseif(ACTION STREQUAL "remove")
-  require_no_dependencies("${DEPENDENCIES}")
   if(COMPONENT_TYPE STREQUAL "lib")
+    require_no_dependencies("${DEPENDENCIES}")
+
     remove_lib("${COMPONENT_NAME}")
     message(STATUS "Removed lib with tests: ${COMPONENT_NAME}")
+
   elseif(COMPONENT_TYPE STREQUAL "app")
+    require_no_dependencies("${DEPENDENCIES}")
+
     remove_app("${COMPONENT_NAME}")
     message(STATUS "Removed app: ${COMPONENT_NAME}")
+
+  elseif(COMPONENT_TYPE STREQUAL "lib_dependency")
+    require_dependencies("${DEPENDENCIES}")
+
+    remove_lib_dependency("${COMPONENT_NAME}" "${DEPENDENCIES}")
+    message(STATUS "Removed lib dependencies from ${COMPONENT_NAME}: ${DEPENDENCIES}")
+
+  elseif(COMPONENT_TYPE STREQUAL "app_dependency")
+    require_dependencies("${DEPENDENCIES}")
+
+    remove_app_dependency("${COMPONENT_NAME}" "${DEPENDENCIES}")
+    message(STATUS "Removed app dependencies from ${COMPONENT_NAME}: ${DEPENDENCIES}")
+
   else()
-    message(FATAL_ERROR "Unknown component type: ${COMPONENT_TYPE}. Supported types: lib, app")
+    message(FATAL_ERROR "Unknown component type: ${COMPONENT_TYPE}. Supported types: lib, app, lib_dependency, app_dependency")
   endif()
+
 else()
   message(FATAL_ERROR "Unknown action: ${ACTION}. Supported actions: create, remove")
 endif()
