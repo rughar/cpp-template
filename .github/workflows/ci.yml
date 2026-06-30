@@ -30,3 +30,6 @@ jobs:
 
       - name: Test
         run: ctest --test-dir build --build-config Release --output-on-failure --parallel
+
+      - name: Test project generator
+        run: cmake -P tools/project_script_test.cmake
