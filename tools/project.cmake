@@ -458,7 +458,7 @@ set_tests_properties(\${TEST_NAME}
 
   file(WRITE "${test_dir}/${lib_name}Tests.cpp"
 "#include \"${lib_name}.hpp\"
-#include \"UTest.hpp\"
+#include \"utest.hpp\"
 
 int main()
 {
