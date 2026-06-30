@@ -3,6 +3,15 @@ cmake_minimum_required(VERSION 3.20)
 set(PROJECT_ROOT "${CMAKE_CURRENT_LIST_DIR}/..")
 set(TEST_ROOT "${PROJECT_ROOT}/build/project_script_test")
 set(TEST_PROJECT "${TEST_ROOT}/project")
+set(TEST_CONFIGURATION Debug)
+
+get_filename_component(CMAKE_BIN_DIR "${CMAKE_COMMAND}" DIRECTORY)
+
+find_program(CTEST_COMMAND
+  NAMES ctest
+  HINTS "${CMAKE_BIN_DIR}"
+  REQUIRED
+)
 
 set(TEST_PREFIX "project_script_test_9f3a7c")
 set(TEST_LIB_A "${TEST_PREFIX}_alpha")
@@ -122,7 +131,7 @@ file(COPY "${PROJECT_ROOT}/"
 step("Create first library")
 
 run(
-  cmake
+  "${CMAKE_COMMAND}"
   -P
   tools/project.cmake
   create
@@ -138,7 +147,7 @@ require_file_contains("${TEST_PROJECT}/tests/CMakeLists.txt" "add_subdirectory($
 step("Create second library depending on first library")
 
 run(
-  cmake
+  "${CMAKE_COMMAND}"
   -P
   tools/project.cmake
   create
@@ -154,7 +163,7 @@ require_file_contains("${TEST_PROJECT}/libs/${TEST_LIB_B}/CMakeLists.txt" "    $
 step("Reject duplicate library dependency")
 
 run_expect_failure(
-  cmake
+  "${CMAKE_COMMAND}"
   -P
   tools/project.cmake
   create
@@ -166,7 +175,7 @@ run_expect_failure(
 step("Remove library dependency")
 
 run(
-  cmake
+  "${CMAKE_COMMAND}"
   -P
   tools/project.cmake
   remove
@@ -180,7 +189,7 @@ require_file_does_not_contain("${TEST_PROJECT}/libs/${TEST_LIB_B}/CMakeLists.txt
 step("Reject removing missing library dependency")
 
 run_expect_failure(
-  cmake
+  "${CMAKE_COMMAND}"
   -P
   tools/project.cmake
   remove
@@ -192,7 +201,7 @@ run_expect_failure(
 step("Create application depending on first library")
 
 run(
-  cmake
+  "${CMAKE_COMMAND}"
   -P
   tools/project.cmake
   create
@@ -207,7 +216,7 @@ require_file_contains("${TEST_PROJECT}/apps/${TEST_APP}/CMakeLists.txt" "    ${T
 step("Create application dependency")
 
 run(
-  cmake
+  "${CMAKE_COMMAND}"
   -P
   tools/project.cmake
   create
@@ -221,7 +230,7 @@ require_file_contains("${TEST_PROJECT}/apps/${TEST_APP}/CMakeLists.txt" "    ${T
 step("Reject duplicate application dependency")
 
 run_expect_failure(
-  cmake
+  "${CMAKE_COMMAND}"
   -P
   tools/project.cmake
   create
@@ -233,7 +242,7 @@ run_expect_failure(
 step("Remove application dependency")
 
 run(
-  cmake
+  "${CMAKE_COMMAND}"
   -P
   tools/project.cmake
   remove
@@ -247,7 +256,7 @@ require_file_does_not_contain("${TEST_PROJECT}/apps/${TEST_APP}/CMakeLists.txt" 
 step("Reject invalid create operations")
 
 run_expect_failure(
-  cmake
+  "${CMAKE_COMMAND}"
   -P
   tools/project.cmake
   create
@@ -256,7 +265,7 @@ run_expect_failure(
 )
 
 run_expect_failure(
-  cmake
+  "${CMAKE_COMMAND}"
   -P
   tools/project.cmake
   create
@@ -265,7 +274,7 @@ run_expect_failure(
 )
 
 run_expect_failure(
-  cmake
+  "${CMAKE_COMMAND}"
   -P
   tools/project.cmake
   create
@@ -275,7 +284,7 @@ run_expect_failure(
 )
 
 run_expect_failure(
-  cmake
+  "${CMAKE_COMMAND}"
   -P
   tools/project.cmake
   create
@@ -285,7 +294,7 @@ run_expect_failure(
 )
 
 run_expect_failure(
-  cmake
+  "${CMAKE_COMMAND}"
   -P
   tools/project.cmake
   create
@@ -297,7 +306,7 @@ run_expect_failure(
 step("Configure generated project")
 
 run(
-  cmake
+  "${CMAKE_COMMAND}"
   -S
   .
   -B
@@ -307,17 +316,21 @@ run(
 step("Build generated project")
 
 run(
-  cmake
+  "${CMAKE_COMMAND}"
   --build
   build
+  --config
+  ${TEST_CONFIGURATION}
 )
 
 step("Run generated project tests")
 
 run(
-  ctest
+  "${CTEST_COMMAND}"
   --test-dir
   build
+  -C
+  ${TEST_CONFIGURATION}
   --output-on-failure
 )
 
