@@ -133,7 +133,7 @@ function(format_library_dependencies output_variable dependencies)
 
   set(block
 "target_link_libraries(\${LIBRARY_NAME}
-  PUBLIC
+  \${LIBRARY_USAGE}
 ${dependency_lines})
 "
   )
@@ -161,9 +161,9 @@ endfunction()
 
 function(format_test_dependencies output_variable lib_name)
   set(block
-"target_link_libraries(\${TEST_NAME}_tests
+"target_link_libraries(\${TEST_NAME}
   PRIVATE
-    unit_test
+    utest_framework
     ${lib_name}
 )
 "
@@ -340,7 +340,7 @@ function(create_lib_dependency lib_name dependencies)
   create_dependencies_in_target(
     "libs/${lib_name}/CMakeLists.txt"
     "\${LIBRARY_NAME}"
-    "PUBLIC"
+    "\${LIBRARY_USAGE}"
     "${dependencies}"
   )
 endfunction()
@@ -364,14 +364,14 @@ function(remove_lib_dependency lib_name dependencies)
   remove_dependencies_from_target(
     "libs/${lib_name}/CMakeLists.txt"
     "\${LIBRARY_NAME}"
-    "PUBLIC"
+    "\${LIBRARY_USAGE}"
     "${dependencies}"
   )
 endfunction()
 
 function(create_lib lib_name dependencies)
   set(lib_dir "libs/${lib_name}")
-  set(test_dir "tests/${lib_name}")
+  set(test_dir "tests/${lib_name}_test")
 
   require_directory_does_not_exist("${lib_dir}")
   require_directory_does_not_exist("${test_dir}")
@@ -392,31 +392,34 @@ get_filename_component(LIBRARY_NAME
   NAME
 )
 
-add_library(\${LIBRARY_NAME}
-  \${LIBRARY_SOURCES}
-)
+if(LIBRARY_SOURCES)
+  add_library(\${LIBRARY_NAME})
+
+  target_sources(\${LIBRARY_NAME}
+    PRIVATE
+      \${LIBRARY_SOURCES}
+  )
+
+  set(LIBRARY_USAGE PUBLIC)
+else()
+  add_library(\${LIBRARY_NAME} INTERFACE)
+
+  set(LIBRARY_USAGE INTERFACE)
+endif()
 
 target_include_directories(\${LIBRARY_NAME}
-  PUBLIC
+  \${LIBRARY_USAGE}
     \${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-${library_dependencies}project_set_warnings(\${LIBRARY_NAME})
+${library_dependencies}if(LIBRARY_SOURCES)
+  project_set_warnings(\${LIBRARY_NAME})
+endif()
 "
   )
 
   file(WRITE "${lib_dir}/${lib_name}.hpp"
 "#pragma once
-
-namespace ${lib_name}
-{
-
-}
-"
-  )
-
-  file(WRITE "${lib_dir}/${lib_name}.cpp"
-"#include \"${lib_name}.hpp\"
 
 namespace ${lib_name}
 {
@@ -435,31 +438,31 @@ get_filename_component(TEST_NAME
   NAME
 )
 
-add_executable(\${TEST_NAME}_tests
+add_executable(\${TEST_NAME}
   \${TEST_SOURCES}
 )
 
-${test_dependencies}project_set_warnings(\${TEST_NAME}_tests)
+${test_dependencies}project_set_warnings(\${TEST_NAME})
 
 add_test(
-  NAME \${TEST_NAME}_tests
-  COMMAND \${TEST_NAME}_tests
+  NAME \${TEST_NAME}
+  COMMAND \${TEST_NAME}
 )
 
-set_tests_properties(\${TEST_NAME}_tests
+set_tests_properties(\${TEST_NAME}
   PROPERTIES
-    DEPENDS unit_test_tests
+    DEPENDS utest_framework_smoke
 )
 "
   )
 
   file(WRITE "${test_dir}/${lib_name}Tests.cpp"
 "#include \"${lib_name}.hpp\"
-#include \"UnitTest.hpp\"
+#include \"UTest.hpp\"
 
 int main()
 {
-  unit_test::Runner runner;
+  utest::Runner runner;
 
   runner.printSummary();
 
@@ -469,7 +472,7 @@ int main()
   )
 
   append_subdirectory("libs/CMakeLists.txt" "${lib_name}")
-  append_subdirectory("tests/CMakeLists.txt" "${lib_name}")
+  append_subdirectory("tests/CMakeLists.txt" "${lib_name}_test")
 endfunction()
 
 function(create_app app_name dependencies)
@@ -516,7 +519,7 @@ endfunction()
 
 function(remove_lib lib_name)
   set(lib_dir "libs/${lib_name}")
-  set(test_dir "tests/${lib_name}")
+  set(test_dir "tests/${lib_name}_test")
 
   require_directory_exists("${lib_dir}")
   require_directory_exists("${test_dir}")
@@ -525,7 +528,7 @@ function(remove_lib lib_name)
   file(REMOVE_RECURSE "${test_dir}")
 
   remove_subdirectory("libs/CMakeLists.txt" "${lib_name}")
-  remove_subdirectory("tests/CMakeLists.txt" "${lib_name}")
+  remove_subdirectory("tests/CMakeLists.txt" "${lib_name}_test")
 endfunction()
 
 function(remove_app app_name)
@@ -551,7 +554,7 @@ if(ACTION STREQUAL "create")
     require_libs_exist("${DEPENDENCIES}")
 
     create_lib("${COMPONENT_NAME}" "${DEPENDENCIES}")
-    message(STATUS "Created lib with tests: ${COMPONENT_NAME}")
+    message(STATUS "Created lib with test app: ${COMPONENT_NAME}")
 
   elseif(COMPONENT_TYPE STREQUAL "app")
     require_libs_exist("${DEPENDENCIES}")
@@ -580,7 +583,7 @@ elseif(ACTION STREQUAL "remove")
     require_no_dependencies("${DEPENDENCIES}")
 
     remove_lib("${COMPONENT_NAME}")
-    message(STATUS "Removed lib with tests: ${COMPONENT_NAME}")
+    message(STATUS "Removed lib with test app: ${COMPONENT_NAME}")
 
   elseif(COMPONENT_TYPE STREQUAL "app")
     require_no_dependencies("${DEPENDENCIES}")

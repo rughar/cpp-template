@@ -4,7 +4,7 @@
 #include <iostream>
 #include <stdexcept>
 
-namespace unit_test
+namespace utest
 {
 
 inline void require(bool condition, const char* message = "Test requirement failed.")

@@ -1,4 +1,4 @@
-#include "UnitTest.hpp"
+#include "utest.hpp"
 
 #include <stdexcept>
 
@@ -7,14 +7,14 @@ namespace
 
 void testRequireAcceptsTrueCondition()
 {
-  unit_test::require(true, "require(true) should not throw.");
+  utest::require(true, "require(true) should not throw.");
 }
 
 void testRequireThrowsForFalseCondition()
 {
   try
   {
-    unit_test::require(false);
+    utest::require(false);
   }
   catch (const std::runtime_error&)
   {
@@ -28,7 +28,7 @@ void testRequireThrowsForFalseCondition()
 
 int main()
 {
-  unit_test::Runner runner;
+  utest::Runner runner;
 
   runner.run(testRequireAcceptsTrueCondition, "testRequireAcceptsTrueCondition");
   runner.run(testRequireThrowsForFalseCondition, "testRequireThrowsForFalseCondition");
